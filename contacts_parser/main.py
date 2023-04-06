@@ -16,6 +16,154 @@ class FileReader:
         if not os.path.isfile(file):
             raise FileNotFoundError(file)
 
+
+class OnlyOneValueAllowedError(ValueError):
+    def __init__(self, *args: object):
+        print(*args)
+        super().__init__(*args)
+
+
+class Contact:
+    STR_EMPTY = ''
+    INT_EMPTY = 0
+
+    def __init__(self) -> None:
+        self._email: tp.Optional[str] = None
+        self._name: str = self.STR_EMPTY
+        self._family_name: str = self.STR_EMPTY
+        self._note: tp.Optional[str] = None
+        self._phone: int = self.INT_EMPTY
+
+    def __repr__(self) -> str:
+        return f"""
+Contact:
+- email={self.email}
+- _name={self._name}
+- _family_name={self._family_name}
+- name={self.name}
+- note={self.note}
+- phone={self.phone}
+"""
+
+    @property
+    def email(self) -> tp.Optional[str]:
+        return self._email
+
+    @email.setter
+    def email(self, value: str):
+        if self._is_email_initialized():
+            raise OnlyOneValueAllowedError(self)
+        else:
+            value = self._get_str_to_set(value)
+            if re.search(r".+@.+\..+", str(value)) is None:
+                raise ValueError
+            self._email = value
+
+    def _is_email_initialized(self) -> bool:
+        return self._email is not None
+
+    @property
+    def name(self) -> str:
+        if self._is_name_initialized():
+            return self._get_name_to_show()
+        raise ValueError
+
+    def _get_name_to_show(self) -> str:
+        if self._is_name_initialized() and self._is_family_name_initialized():
+            if self._name in self._family_name:
+                return self._family_name
+            elif self._family_name in self._name:
+                return self._name
+            else:
+                # Sometimes the name contains a `;` and the order of the strings is different than in family_name.
+                # Example
+                # N:aparato;dentista;;;
+                # FN:dentista aparato
+                name = self._name
+                if ";" in name:
+                    name = self._name.replace(";", " ")
+                name_list = name.split(" ");
+                family_name_list = self._family_name.split(" ");
+                if all(element in family_name_list for element in name_list) or all(element in name_list for element in family_name_list):
+                    if len(name_list) > len(family_name_list):
+                        return name
+                    else:
+                        return self._family_name
+                else:
+                    raise OnlyOneValueAllowedError
+        else:
+            raise ValueError
+
+    @name.setter
+    def name(self, value: str):
+        if self._is_name_initialized():
+            raise OnlyOneValueAllowedError(self)
+        else:
+            value = self._get_str_to_set(value)
+            self._name = value
+
+    def _is_name_initialized(self) -> bool:
+        return self._name != self.STR_EMPTY
+
+    def set_family_name(self, value: str):
+        if self._is_family_name_initialized():
+            raise OnlyOneValueAllowedError(self)
+        else:
+            value = self._get_str_to_set(value)
+            self._family_name = value
+
+    def _is_family_name_initialized(self) -> bool:
+        return self._family_name != self.STR_EMPTY
+
+    def _get_str_to_set(self, value: str) -> str:
+        value = value.strip()
+        if len(value) == 0:
+            raise ValueError
+        return value
+
+
+    @property
+    def note(self) -> tp.Optional[str]:
+        return self._note
+
+    @note.setter
+    def note(self, value: str):
+        if self._is_note_initialized():
+            raise OnlyOneValueAllowedError(self)
+        else:
+            value = self._get_str_to_set(value)
+            self._note = value
+
+    def _is_note_initialized(self) -> bool:
+        return self._note is not None
+
+    @property
+    def phone(self) -> int:
+        if self._is_phone_initialized():
+            return self._phone
+        raise ValueError
+
+    def _is_phone_initialized(self) -> bool:
+        return self._phone != self.INT_EMPTY
+
+    @phone.setter
+    def phone(self, value: str):
+        value: int = self._get_phone_to_set(value)
+        if self._is_phone_initialized() and self._phone != value:
+            raise OnlyOneValueAllowedError(self)
+        else:
+            self._phone = value
+
+    def _get_phone_to_set(self, value: str) -> int:
+        value = self._get_str_to_set(value)
+        if value.startswith("+"):
+            value = value[1:]
+        if value.startswith("34") and len(value) > 9:
+            value = value[2:]
+        return int(value)
+
+
+
 class VcfLineParser:
     regexs = {
         "init_contact": r"^BEGIN:VCARD$",
@@ -76,40 +224,47 @@ class VcfLineParser:
 
 class VcfFileParser:
     def parse_file(self, file_path_name: str):
-        contacts_count = 0
+        contacts: tp.List[Contact] = []
         for line in FileReader().get_lines_in_file(file_path_name):
             line_parsed = VcfLineParser(line)
             if line_parsed.is_type("init_contact"):
-                contacts_count += 1
-                print(f"Init contact: {contacts_count}")
+                print("Init contact: {}".format(len(contacts) + 1))
+                contact = Contact()
             elif line_parsed.is_type("version"):
                 pass
             elif line_parsed.is_type("name_encoded"):
                 value = line_parsed.get_value("name_encoded")
                 print(f"Name decoded: {value}")
+                contact.name = value
             elif line_parsed.is_type("name"):
                 value = line_parsed.get_value("name")
                 print(f"Name: {value}")
+                contact.name = value
             elif line_parsed.is_type("family_name"):
                 value = line_parsed.get_value("family_name")
                 print(f"Family name: {value}")
+                contact.set_family_name(value)
             elif line_parsed.is_type("family_name_encoded"):
                 value = line_parsed.get_value("family_name_encoded")
                 print(f"Family name decoded: {value}")
+                contact.set_family_name(value)
             elif line_parsed.is_type("phone"):
                 value = line_parsed.get_value("phone")
                 print(f"Phone: {value}")
+                contact.phone = value
             elif line_parsed.is_type("note_encoded"):
                 value = line_parsed.get_value("note_encoded")
                 print(f"Note decoded: {value}")
+                contact.note = value
             elif line_parsed.is_type("email"):
                 value = line_parsed.get_value("email")
                 print(f"Email: {value}")
+                contact.email = value
             elif line_parsed.is_type("end_contact"):
-                print()
+                print(contact)
+                contacts.append(contact)
             else:
                 line_parsed.raise_not_parsed_error()
-        print(f"Contacts count: {contacts_count}")
 
 
 if __name__ == "__main__":
