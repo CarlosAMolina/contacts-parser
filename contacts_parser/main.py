@@ -24,7 +24,7 @@ class OnlyOneValueAllowedError(ValueError):
 
 
 class Contact:
-    STR_EMPTY = ''
+    STR_EMPTY = ""
     INT_EMPTY = 0
 
     def __init__(self) -> None:
@@ -82,9 +82,11 @@ Contact:
                 name = self._name
                 if ";" in name:
                     name = self._name.replace(";", " ")
-                name_list = name.split(" ");
-                family_name_list = self._family_name.split(" ");
-                if all(element in family_name_list for element in name_list) or all(element in name_list for element in family_name_list):
+                name_list = name.split(" ")
+                family_name_list = self._family_name.split(" ")
+                if all(element in family_name_list for element in name_list) or all(
+                    element in name_list for element in family_name_list
+                ):
                     if len(name_list) > len(family_name_list):
                         return name
                     else:
@@ -120,7 +122,6 @@ Contact:
         if len(value) == 0:
             raise ValueError
         return value
-
 
     @property
     def note(self) -> tp.Optional[str]:
@@ -161,7 +162,6 @@ Contact:
         if value.startswith("34") and len(value) > 9:
             value = value[2:]
         return int(value)
-
 
 
 class VcfLineParser:
@@ -209,7 +209,7 @@ class VcfLineParser:
         return result
 
     def _get_decoded(self, string: str) -> str:
-        return quopri.decodestring(string).decode('utf-8')
+        return quopri.decodestring(string).decode("utf-8")
 
     def _get_value_regex_findall(self, regex: str) -> str:
         regex_result = re.findall(regex, self._line)
@@ -270,4 +270,3 @@ class VcfFileParser:
 if __name__ == "__main__":
     file_path_name = "/home/x/Downloads/Contactos.vcf"
     VcfFileParser().parse_file(file_path_name)
-
