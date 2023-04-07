@@ -1,3 +1,4 @@
+import csv
 import quopri
 import os.path
 import re
@@ -222,14 +223,6 @@ class VcfLineParser:
         raise ValueError(f"Not parsed: {self._line}")
 
 
-class ContactToCsvExporter:
-    def __init__(self, contact: Contact) -> None:
-        self._contact = contact
-
-    def export_to_csv(self):
-        raise NotImplemented
-
-
 class VcfFileParser:
     def get_contacts_in_file(self, file_path_name: str) -> tp.Iterator[Contact]:
         contacts_count = 0
@@ -274,9 +267,21 @@ class VcfFileParser:
             else:
                 line_parsed.raise_not_parsed_error()
 
+def export_file_to_csv(file_path_name: str):
+    column_names = ["name", "phone"]
+    with open('contacts.csv', mode='w') as f:
+        writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(column_names)
+        for contact in VcfFileParser().get_contacts_in_file(file_path_name):
+            print(contact)
+            columns_to_export = [
+                getattr(contact, column_name)
+                for column_name in column_names
+            ]
+            writer.writerow(columns_to_export)
+
 def run(file_path_name: str):
-    for contact in VcfFileParser().get_contacts_in_file(file_path_name):
-        print(contact)
+    export_file_to_csv(file_path_name)
 
 if __name__ == "__main__":
     file_path_name = "/home/x/Downloads/Contactos.vcf"
