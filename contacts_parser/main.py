@@ -1,5 +1,6 @@
 import csv
 import quopri
+import pathlib
 import os.path
 import re
 import typing as tp
@@ -267,22 +268,28 @@ class VcfFileParser:
             else:
                 line_parsed.raise_not_parsed_error()
 
-def export_file_to_csv(file_path_name: str):
+
+def export_file_to_csv(input_file_path_name: str):
     column_names = ["name", "phone"]
-    with open('contacts.csv', mode='w') as f:
-        writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    output_file_path_name = str(
+        pathlib.Path(input_file_path_name).with_name("contacts.csv")
+    )
+    with open(output_file_path_name, mode="w") as f:
+        writer = csv.writer(f, delimiter=",", quotechar='"', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(column_names)
-        for contact in VcfFileParser().get_contacts_in_file(file_path_name):
+        for contact in VcfFileParser().get_contacts_in_file(input_file_path_name):
             print(contact)
             columns_to_export = [
-                getattr(contact, column_name)
-                for column_name in column_names
+                getattr(contact, column_name) for column_name in column_names
             ]
             writer.writerow(columns_to_export)
+    print(f"File {input_file_path_name} exported to {output_file_path_name}")
+
 
 def run(file_path_name: str):
     export_file_to_csv(file_path_name)
 
+
 if __name__ == "__main__":
-    file_path_name = "/home/x/Downloads/Contactos.vcf"
+    file_path_name = "/tmp/contacts.vcf"
     run(file_path_name)
