@@ -222,13 +222,22 @@ class VcfLineParser:
         raise ValueError(f"Not parsed: {self._line}")
 
 
+class ContactToCsvExporter:
+    def __init__(self, contact: Contact) -> None:
+        self._contact = contact
+
+    def export_to_csv(self):
+        raise NotImplemented
+
+
 class VcfFileParser:
-    def parse_file(self, file_path_name: str):
-        contacts: tp.List[Contact] = []
+    def get_contacts_in_file(self, file_path_name: str) -> tp.Iterator[Contact]:
+        contacts_count = 0
         for line in FileReader().get_lines_in_file(file_path_name):
             line_parsed = VcfLineParser(line)
             if line_parsed.is_type("init_contact"):
-                print("Init contact: {}".format(len(contacts) + 1))
+                contacts_count += 1
+                print(f"Init contact: {contacts_count}")
                 contact = Contact()
             elif line_parsed.is_type("version"):
                 pass
@@ -261,12 +270,14 @@ class VcfFileParser:
                 print(f"Email: {value}")
                 contact.email = value
             elif line_parsed.is_type("end_contact"):
-                print(contact)
-                contacts.append(contact)
+                yield contact
             else:
                 line_parsed.raise_not_parsed_error()
 
+def run(file_path_name: str):
+    for contact in VcfFileParser().get_contacts_in_file(file_path_name):
+        print(contact)
 
 if __name__ == "__main__":
     file_path_name = "/home/x/Downloads/Contactos.vcf"
-    VcfFileParser().parse_file(file_path_name)
+    run(file_path_name)
